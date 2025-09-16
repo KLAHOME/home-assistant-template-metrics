@@ -1,0 +1,52 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Home Assistant Metrics Setup",
+        "description": "Configure Grafana Cloud connection",
+        "data": {
+          "grafana_url": "Grafana Cloud URL",
+          "grafana_user": "Grafana Cloud Username",
+          "grafana_password": "Grafana Cloud Password",
+          "update_interval": "Update Interval (seconds)"
+        }
+      },
+      "ha_instance": {
+        "title": "Add Home Assistant Instance",
+        "description": "Configure Home Assistant instance {instance_count}",
+        "data": {
+          "ha_url": "Home Assistant URL",
+          "ha_token": "Home Assistant Access Token",
+          "ha_alias": "Instance Alias"
+        }
+      },
+      "add_another": {
+        "title": "Add Another Instance",
+        "description": "You have configured {instance_count} Home Assistant instance(s). Would you like to add another?",
+        "data": {
+          "add_another": "Add another Home Assistant instance"
+        }
+      }
+    },
+    "error": {
+      "auth_failed": "Authentication failed. Please check your credentials.",
+      "connection_failed": "Connection failed. Please check the URL and try again.",
+      "invalid_url": "Invalid URL format.",
+      "unknown": "Unknown error occurred."
+    },
+    "abort": {
+      "already_configured": "This integration is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Home Assistant Metrics Options",
+        "description": "Configure options for Home Assistant Metrics",
+        "data": {
+          "update_interval": "Update Interval (seconds)"
+        }
+      }
+    }
+  }
+}

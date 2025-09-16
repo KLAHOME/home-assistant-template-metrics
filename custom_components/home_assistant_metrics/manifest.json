@@ -1,0 +1,13 @@
+{
+  "domain": "home_assistant_metrics",
+  "name": "Home Assistant Metrics",
+  "codeowners": ["@KLAHOME"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/KLAHOME/home-assistant-metrics",
+  "integration_type": "service",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/KLAHOME/home-assistant-metrics/issues",
+  "requirements": ["requests>=2.25.1"],
+  "version": "1.0.0"
+}
