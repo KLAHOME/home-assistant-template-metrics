@@ -79,7 +79,7 @@ class HAMetricsCoordinator(DataUpdateCoordinator):
                 instance_url = instance[CONF_HA_URL]
                 instance_token = instance[CONF_HA_TOKEN]
                 
-                _LOGGER.debug(f"Collecting metrics from {instance_alias}")
+                _LOGGER.debug(f"Collecting metrics from {instance_alias} at {instance_url}")
                 
                 # Get all states from the Home Assistant instance
                 states = await self._fetch_ha_states(instance_url, instance_token)
@@ -96,17 +96,33 @@ class HAMetricsCoordinator(DataUpdateCoordinator):
                     )
                     all_metrics.extend(instance_metrics)
                     
-                    _LOGGER.debug(f"Converted {len(instance_metrics)} metrics from {instance_alias}")
+                    _LOGGER.debug(f"Converted {len(instance_metrics)} metrics from {len(states)} states in {instance_alias}")
                 else:
                     _LOGGER.warning(f"No states received from {instance_alias}")
+                    metrics_data[instance_alias] = {
+                        "entity_count": 0,
+                        "last_update": time.time(),
+                        "error": "No states received"
+                    }
             
             # Push all metrics to Grafana Cloud
             if all_metrics:
+                _LOGGER.debug(f"Pushing {len(all_metrics)} metrics to Grafana Cloud")
                 success = await self.grafana_client.push_metrics(self.hass, all_metrics)
                 if success:
                     _LOGGER.debug(f"Successfully pushed {len(all_metrics)} metrics to Grafana Cloud")
+                    # Add success information to the data
+                    for instance_data in metrics_data.values():
+                        instance_data["last_push_success"] = True
+                        instance_data["last_push_time"] = time.time()
                 else:
                     _LOGGER.error("Failed to push metrics to Grafana Cloud")
+                    # Add error information to the data
+                    for instance_data in metrics_data.values():
+                        instance_data["last_push_success"] = False
+                        instance_data["last_push_time"] = time.time()
+            else:
+                _LOGGER.info("No metrics to push to Grafana Cloud")
             
             return metrics_data
             
@@ -171,18 +187,35 @@ class HAMetricsSensor(CoordinatorEntity, SensorEntity):
         
         # Add per-instance information
         total_entities = 0
+        all_success = True
         for instance, data in self.coordinator.data.items():
             entity_count = data.get("entity_count", 0)
             last_update = data.get("last_update")
+            last_push_success = data.get("last_push_success")
+            last_push_time = data.get("last_push_time")
+            error = data.get("error")
             
             attributes[f"{instance}_entities"] = entity_count
             if last_update:
                 attributes[f"{instance}_last_update"] = time.strftime(
                     "%Y-%m-%d %H:%M:%S", time.localtime(last_update)
                 )
+            if last_push_success is not None:
+                attributes[f"{instance}_last_push_success"] = last_push_success
+                if not last_push_success:
+                    all_success = False
+            if last_push_time:
+                attributes[f"{instance}_last_push"] = time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(last_push_time)
+                )
+            if error:
+                attributes[f"{instance}_error"] = error
+                
             total_entities += entity_count
         
         attributes["total_entities"] = total_entities
+        attributes["all_instances_healthy"] = all_success
+        
         return attributes
 
 
