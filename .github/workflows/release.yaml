@@ -1,0 +1,31 @@
+name: Release
+
+"on":
+  release:
+    types:
+      - published
+
+jobs:
+  release:
+    name: Release artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Adjust version number
+        shell: bash
+        run: |
+          yq -i -o json '.version="${{ github.event.release.tag_name }}"' \
+            "${{ github.workspace }}/custom_components/hametrics/manifest.json"
+
+      - name: Zip the integration directory
+        shell: bash
+        run: |
+          cd "${{ github.workspace }}/custom_components/hametrics"
+          zip hametrics.zip -r ./
+
+      - name: Upload the zip file to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ github.workspace }}/custom_components/hametrics/hametrics.zip

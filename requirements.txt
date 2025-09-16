@@ -1,0 +1,4 @@
+homeassistant
+requests
+protobuf
+python-snappy
