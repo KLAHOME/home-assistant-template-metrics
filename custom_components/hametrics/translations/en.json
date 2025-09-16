@@ -29,7 +29,7 @@
           "entities": "Entities to monitor (comma separated, leave empty for all)"
         },
         "data_description": {
-          "url": "Must start with https:// and end with /"
+          "grafana_url": "Must start with https:// and end with /"
         }
       }
     }
