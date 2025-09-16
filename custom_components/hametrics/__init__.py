@@ -114,6 +114,9 @@ class HAMetrics:
         """Create metrics from entity state."""
         metrics = []
 
+        if state is None:
+            return []
+
         try:
             # Base labels for all metrics from this entity
             base_labels = {
