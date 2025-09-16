@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResultType
-from homeassistant.setup import async_setup_component
 
 from custom_components.hametrics.const import (
     DOMAIN,
@@ -13,7 +12,6 @@ from custom_components.hametrics.const import (
     CONF_GRAFANA_TOKEN,
     CONF_PUSH_INTERVAL,
     CONF_INSTANCE_NAME,
-    CONF_ENTITIES,
 )
 
 

@@ -54,9 +54,6 @@ class WriteRequest:
     def SerializeToString(self) -> bytes:
         """Serialize to protobuf binary format."""
         try:
-            # Use protobuf library if available
-            import google.protobuf.message
-
             return self._serialize_with_protobuf()
         except ImportError:
             # Fallback to simple binary encoding
