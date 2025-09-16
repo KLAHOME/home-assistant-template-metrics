@@ -36,7 +36,7 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Required(CONF_GRAFANA_URL): cv.string,
                 vol.Required(CONF_GRAFANA_USER): cv.string,
                 vol.Required(CONF_GRAFANA_TOKEN): cv.string,
-                vol.Optional(CONF_ENTITIES, default=[]): cv.ensure_list,
+                vol.Optional(CONF_ENTITIES, default=[]): vol.All(cv.ensure_list),
                 vol.Optional(CONF_PUSH_INTERVAL, default=60): cv.positive_int,
                 vol.Optional(CONF_INSTANCE_NAME): cv.string,
             }
