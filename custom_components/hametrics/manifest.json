@@ -1,0 +1,25 @@
+{
+  "domain": "hametrics",
+  "name": "Home Assistant Metrics",
+  "after_dependencies": [
+    "cloud"
+  ],
+  "codeowners": [
+    "@klatka"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/KLAHOME/home-assistant-metrics",
+  "integration_type": "service",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/KLAHOME/home-assistant-metrics/issues",
+  "loggers": [
+    "custom_components.hametrics"
+  ],
+  "requirements": [
+    "requests",
+    "protobuf",
+    "python-snappy"
+  ],
+  "version": "0.0.1"
+}
