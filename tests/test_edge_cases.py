@@ -12,19 +12,8 @@ class TestEdgeCases:
     """Test edge cases and error conditions."""
 
     @pytest.fixture
-    def config(self):
-        return {
-            "grafana_url": "https://test.grafana.net",
-            "grafana_user": "test",
-            "grafana_token": "token",
-            "instance_name": "test",
-            "entities": [],
-            "push_interval": 60,
-        }
-
-    @pytest.fixture
-    def ha_metrics(self, hass, config):
-        return HAMetrics(hass, config)
+    def ha_metrics(self, hass, hametrics_yaml_config):
+        return HAMetrics(hass, hametrics_yaml_config)
 
     def test_create_metric_with_none_state(self, ha_metrics):
         """Test metric creation with None state."""
