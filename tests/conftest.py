@@ -1,18 +1,12 @@
-"""Pytest fixtures for hametrics (YAML-only setup)."""
+"""Test fixtures for Home Assistant Metrics."""
 
 import os
 import sys
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+from homeassistant.setup import async_setup_component
 
-from custom_components.hametrics.const import (
-    DOMAIN,
-    CONF_GRAFANA_URL,
-    CONF_GRAFANA_USER,
-    CONF_GRAFANA_TOKEN,
-    CONF_PUSH_INTERVAL,
-    CONF_INSTANCE_NAME,
-    CONF_ENTITIES,
-)
+from custom_components.hametrics.const import DOMAIN
 
 
 if "HA_CLONE" in os.environ:
@@ -22,93 +16,66 @@ if "HA_CLONE" in os.environ:
 
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(
-    enable_custom_integrations: None,  # provided by pytest-homeassistant-custom-component
-):
-    """Enable custom integrations for tests."""
+    enable_custom_integrations: None,
+):  # pylint: disable=unused-argument
+    """Enable custom integrations."""
     yield
 
 
 @pytest.fixture
-def hametrics_yaml_config():
-    """YAML-style configuration for hametrics (no config flow)."""
+def mock_config():
+    """Fixture for a sample configuration."""
     return {
-        CONF_GRAFANA_URL: "http://grafana.local",
-        CONF_GRAFANA_USER: "test_user",
-        CONF_GRAFANA_TOKEN: "test_token",
-        CONF_PUSH_INTERVAL: 1,  # speed up interval for tests
-        CONF_INSTANCE_NAME: "homeassistant",
-        # Explicitly configure which entities are exported
-        CONF_ENTITIES: [
-            "sensor.temp",
-            "light.kitchen",
-            "switch.outlet",
-            "sensor.demo",
-        ],
+        DOMAIN: {
+            "instance_id": "test_instance",
+            "api_key": "test_api_key",
+            "remote_write_url": "https://prometheus.example.com/api/prom/push",
+            "update_interval": 60,
+            "metrics": [
+                {
+                    "name": "ha_temperature_adjusted",
+                    "template": "{{ states('sensor.temp') | float * 1.1 + 2 }}",
+                },
+                {
+                    "name": "ha_uptime_hours",
+                    "template": "{{ (now() - as_timestamp(states.homeassistant.start_time)) / 3600 | round(2) }}",
+                },
+            ],
+        }
     }
 
 
 @pytest.fixture
-def post_calls():
-    """Collect POST calls performed by the fake session."""
-    return []
+def mock_config_entry(mock_config):
+    """Fixture for a mock config entry."""
+    return MockConfigEntry(
+        domain=DOMAIN,
+        data=mock_config[DOMAIN],
+        unique_id="hametrics_test",
+    )
 
 
 @pytest.fixture(autouse=True)
-def mock_network(monkeypatch, post_calls):
-    """Mock network calls and snappy compression used by the integration, capturing POSTs."""
-
-    # Avoid requiring native snappy in tests
-    monkeypatch.setattr(
-        "custom_components.hametrics.snappy.compress", lambda b: b, raising=True
+def mock_opentelemetry(mocker):
+    """Mock OpenTelemetry components to avoid real metric exports."""
+    mocker.patch("opentelemetry.metrics.set_meter_provider")
+    mock_meter = mocker.patch("opentelemetry.metrics.get_meter")
+    mock_gauge = mocker.MagicMock()
+    mocker.patch(
+        "opentelemetry.exporter.prometheus_remote_write.PrometheusRemoteWriteMetricsExporter"
     )
-
-    class _FakeResponse:
-        def __init__(self, status: int = 200, text: str = "OK") -> None:
-            self.status = status
-            self._text = text
-
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, exc_type, exc, tb):
-            return False
-
-        async def text(self):
-            return self._text
-
-    class _FakeSession:
-        def post(self, *args, **kwargs):
-            url = args[0] if args else kwargs.get("url")
-            post_calls.append(
-                {
-                    "url": url,
-                    "headers": kwargs.get("headers") or {},
-                    "data": kwargs.get("data"),
-                    "auth": kwargs.get("auth"),
-                }
-            )
-            return _FakeResponse()
-
-        async def close(self):
-            return None
-
-    # Replace ClientSession with a fake
-    monkeypatch.setattr(
-        "custom_components.hametrics.aiohttp.ClientSession",
-        lambda *a, **k: _FakeSession(),
-        raising=True,
-    )
-
-    yield
+    mock_meter.return_value.create_gauge.return_value = mock_gauge
+    return mock_gauge
 
 
-@pytest.fixture(autouse=True)
-async def _cleanup_hametrics(hass):
-    """Ensure hametrics is unloaded after each test if it was loaded."""
-    yield
-    try:
-        handler = hass.data.get(DOMAIN, {}).get("handler")
-        if handler:
-            await handler.async_unload()
-    except BaseException:
-        pass
+@pytest.fixture
+async def setup_hass(hass, mock_config):
+    """Set up Home Assistant with the Grafana Metrics integration."""
+    await async_setup_component(
+        hass, "homeassistant", {}
+    )  # Setzt homeassistant.start_time
+    hass.states.async_set("sensor.temp", "20.0")  # Mock-Sensor für Templates
+    hass.states.async_set("homeassistant.start_time", "2025-10-10T00:00:00+00:00")
+    assert await async_setup_component(hass, DOMAIN, mock_config)
+    await hass.async_block_till_done()
+    return hass
