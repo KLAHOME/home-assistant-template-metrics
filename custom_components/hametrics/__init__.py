@@ -13,6 +13,7 @@ from homeassistant.const import (
 from homeassistant.core import (
     HomeAssistant,
 )
+from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
@@ -34,6 +35,7 @@ from .const import (
     TEMPLATE_NAME,
     TEMPLATE,
     METER,
+    PROVIDER,
 )
 from .coordinator import HAMetricsCoordinator
 
@@ -42,7 +44,7 @@ _LOGGER = logging.getLogger(__name__)
 TEMPLATE_SCHEMA = vol.Schema(
     {
         vol.Required(TEMPLATE_NAME): cv.string,
-        vol.Required(TEMPLATE): cv.template,
+        vol.Required(TEMPLATE): cv.string,
     }
 )
 
@@ -66,12 +68,23 @@ CONFIG_SCHEMA = vol.Schema(
 
 
 async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
-    """Set up the Grafana Metrics Sender integration."""
+    """Set up the integration."""
     if DOMAIN not in config:
         return True
 
     config_data = config[DOMAIN]
     hass.data.setdefault(DOMAIN, {})
+
+    if (
+        not config_data[INSTANCE_ID]
+        or not config_data[API_KEY]
+        or not config_data[REMOTE_WRITE_URL]
+        or not len(config_data[METRICS])
+    ):
+        _LOGGER.error(
+            "Instance ID, API Key, Remote Write URL and at least one metric must be provided"
+        )
+        raise ConfigEntryNotReady
 
     # Setup OpenTelemetry for Metrics Export
     # resource = {}  # Optional: Füge resource attributes hinzu, z.B. service.name="ha-grafana"
@@ -90,8 +103,18 @@ async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
     )
     metrics.set_meter_provider(provider)
     hass.data[DOMAIN][METER] = metrics.get_meter("ha_metrics")
+    hass.data[DOMAIN][PROVIDER] = provider
 
-    # Coordinator für periodische Updates
+    # Ensure OpenTelemetry background threads are shut down when HA stops
+    async def _shutdown_otel(_event):
+        try:
+            # The SDK exposes a shutdown on the provider to flush and stop readers
+            provider.shutdown()
+        except Exception as err:
+            _LOGGER.debug("Error during OpenTelemetry shutdown: %s", err)
+
+    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _shutdown_otel)
+
     coordinator = HAMetricsCoordinator(
         hass,
         config=config_data,
@@ -103,9 +126,6 @@ async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
 
     hass.data[DOMAIN][COORDINATOR] = coordinator
 
-    # await hass.async_create_task(
-    #    hass.config_entries.async_forward_entry_setups(coordinator, PLATFORMS)
-    # )
     await async_load_platform(hass, Platform.BINARY_SENSOR, DOMAIN, {}, config)
     await async_load_platform(hass, Platform.SWITCH, DOMAIN, {}, config)
 

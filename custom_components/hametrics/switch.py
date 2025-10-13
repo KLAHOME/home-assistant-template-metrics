@@ -6,6 +6,7 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import HAMetricsCoordinator
 from .const import COORDINATOR, DOMAIN
@@ -29,26 +30,34 @@ async def async_setup_platform(
     async_add_entities(entities)
 
 
-class HAMetricsSwitch(SwitchEntity):
+class HAMetricsSwitch(CoordinatorEntity, SwitchEntity):
     """Switch to enable/disable sending metrics."""
 
     _attr_has_entity_name = True
-    _attr_name = ""
+    _attr_name = f"{DOMAIN}_switch"
     _attr_unique_id = f"{DOMAIN}_switch"
 
     def __init__(self, coordinator: HAMetricsCoordinator):
         """Initialize."""
-        self._coordinator = coordinator
-        self._attr_is_on = True
+        super().__init__(coordinator)
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn the switch on."""
-        self._attr_is_on = True
-        self._coordinator.set_telemetry_enabled(True)
+        self.coordinator.set_enabled(True)
+        # CoordinatorEntity will call listeners; ensure we write our state
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turn the switch off."""
-        self._attr_is_on = False
-        self._coordinator.set_telemetry_enabled(False)
+        self.coordinator.set_enabled(False)
         self.async_write_ha_state()
+
+    @property
+    def is_on(self) -> bool:
+        """Return if metrics sending is enabled."""
+        return self.coordinator.enabled
+
+    @property
+    def available(self) -> bool:
+        """Switch should remain available; off reflects disabled or failures."""
+        return True
