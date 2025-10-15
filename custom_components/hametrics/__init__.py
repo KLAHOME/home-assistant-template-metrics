@@ -18,7 +18,7 @@ from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from opentelemetry import metrics
-from opentelemetry.exporter.prometheus_remote_write import (
+from .prometheus_remote_write import (
     PrometheusRemoteWriteMetricsExporter,
 )
 from opentelemetry.sdk.metrics import MeterProvider
