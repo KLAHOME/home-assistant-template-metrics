@@ -6,6 +6,7 @@ Home Assistant-Komponente, die Templates rendert
 
 ```yaml
 template_metrics:
+  instance_label: ha-main
   user: 123456
   token: glc_ey
   remote_write_url: https://prometheus-prod-24-prod-eu-west-2.grafana.net/api/prom/push

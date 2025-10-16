@@ -23,6 +23,7 @@ from .prometheus_remote_write import (
 )
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.sdk.resources import Resource
 
 from .const import (
     COORDINATOR,
@@ -34,6 +35,7 @@ from .const import (
     METRICS,
     TEMPLATE_NAME,
     TEMPLATE,
+    INSTANCE_LABEL,
     METER,
     PROVIDER,
 )
@@ -56,6 +58,7 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Required(TOKEN): cv.string,
                 vol.Required(REMOTE_WRITE_URL): cv.url,
                 vol.Optional(UPDATE_INTERVAL, default=60): cv.positive_int,
+                vol.Optional(INSTANCE_LABEL): cv.string,
                 vol.Required(METRICS): vol.All(
                     cv.ensure_list,
                     [TEMPLATE_SCHEMA],
@@ -80,15 +83,17 @@ async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
         or not config_data[TOKEN]
         or not config_data[REMOTE_WRITE_URL]
         or not len(config_data[METRICS])
+        or (INSTANCE_LABEL in config_data and not config_data[INSTANCE_LABEL])
     ):
         _LOGGER.error(
             "User, Token, Remote Write URL and at least one metric must be provided"
         )
         raise ConfigEntryNotReady
 
-    # Setup OpenTelemetry for Metrics Export
-    # resource = {}  # Optional: Füge resource attributes hinzu, z.B. service.name="ha-grafana"
+    resource_attributes = {"service.name": "homeassistant"}
+
     provider = MeterProvider(
+        resource=Resource(attributes=resource_attributes),
         metric_readers=[
             PeriodicExportingMetricReader(
                 PrometheusRemoteWriteMetricsExporter(
@@ -99,7 +104,7 @@ async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
                 ),
                 export_interval_millis=1000 * config_data.get(UPDATE_INTERVAL, 60),
             )
-        ]
+        ],
     )
     metrics.set_meter_provider(provider)
     hass.data[DOMAIN][METER] = metrics.get_meter("ha_metrics")

@@ -10,7 +10,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.exceptions import TemplateError
 from opentelemetry.sdk.metrics import Meter
 
-from .const import DOMAIN, METER, UPDATE_INTERVAL
+from .const import DOMAIN, METER, UPDATE_INTERVAL, INSTANCE_LABEL, METRIC_LABEL_INSTANCE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -28,6 +28,11 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         self.meter: Meter = hass.data[DOMAIN][METER]
         self.enabled = True
         self.last_update_success = True
+        self._attributes: dict[str, Any] = {}
+
+        instance_label = config.get(INSTANCE_LABEL)
+        if instance_label:
+            self._attributes[METRIC_LABEL_INSTANCE] = instance_label
 
         update_interval = timedelta(seconds=config.get(UPDATE_INTERVAL, 60))
         super().__init__(
@@ -91,7 +96,10 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                     gauge = self.meter.create_gauge(
                         metric["name"], description=f"HA {metric['name']}"
                     )
-                    gauge.set(float_value)
+                    set_kwargs: Dict[str, Any] = {}
+                    if self._attributes:
+                        set_kwargs["attributes"] = self._attributes
+                    gauge.set(float_value, **set_kwargs)
                     metrics_data[metric["name"]] = float_value
                     _LOGGER.debug(f"Updated metric {metric['name']}: {float_value}")
                 except TemplateError as err:

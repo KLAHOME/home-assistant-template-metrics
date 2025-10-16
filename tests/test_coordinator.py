@@ -27,6 +27,8 @@ async def test_coordinator_update(hass: HomeAssistant, mock_config, mock_opentel
         24.0
     )  # (20.0 * 1.1 + 2)
     mock_opentelemetry.set.assert_called()
+    _, kwargs = mock_opentelemetry.set.call_args
+    assert kwargs.get("attributes") == {"instance": "test-instance"}
 
 
 async def test_coordinator_disabled(

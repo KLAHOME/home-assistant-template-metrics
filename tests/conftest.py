@@ -29,6 +29,7 @@ def mock_config():
             "token": "testtoken",
             "remote_write_url": "https://prometheus.example.com/api/prom/push",
             "update_interval": 60,
+            "instance_label": "test-instance",
             "metrics": [
                 {
                     "name": "ha_temperature_adjusted",
@@ -48,5 +49,7 @@ def mock_opentelemetry(mocker):
     mocker.patch(
         "custom_components.template_metrics.PrometheusRemoteWriteMetricsExporter"
     )
+    mocker.patch("custom_components.template_metrics.PeriodicExportingMetricReader")
+
     mock_meter.return_value.create_gauge.return_value = mock_gauge
     return mock_gauge
