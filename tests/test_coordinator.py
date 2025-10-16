@@ -36,7 +36,7 @@ async def test_coordinator_metric_attributes(
 ):
     """Ensure metric-specific attributes are rendered and exported."""
     mock_config[DOMAIN]["metrics"][0]["attributes"] = {
-        "battery_types": "{{ '[\"AA\",\"AAA\"]' }}",
+        "battery_types": '{{ \'["AA","AAA"]\' }}',
         "battery_note": "{{ states('sensor.temp') }}",
     }
 
@@ -67,7 +67,7 @@ async def test_coordinator_multi_series_metric(
     mock_config[DOMAIN]["metrics"] = [
         {
             "name": "battery_quantities",
-            "template": "{{ [{\"value\": 3, \"attributes\": {\"type\": \"AA\", \"device\": \"remote\"}}, {\"value\": \"5\", \"attributes\": {\"type\": \"AAA\"}}] | tojson }}",
+            "template": '{{ [{"value": 3, "attributes": {"type": "AA", "device": "remote"}}, {"value": "5", "attributes": {"type": "AAA"}}] | tojson }}',
             "attributes": {
                 "category": "{{ 'stock' }}",
             },
@@ -106,8 +106,14 @@ async def test_coordinator_multi_series_metric(
     assert data["enabled"] is True
     assert data["data"]["battery_quantities"] == expected_series
     assert mock_opentelemetry.set.call_count == 2
-    assert mock_opentelemetry.set.call_args_list[0][1].get("attributes") == expected_series[0]["attributes"]
-    assert mock_opentelemetry.set.call_args_list[1][1].get("attributes") == expected_series[1]["attributes"]
+    assert (
+        mock_opentelemetry.set.call_args_list[0][1].get("attributes")
+        == expected_series[0]["attributes"]
+    )
+    assert (
+        mock_opentelemetry.set.call_args_list[1][1].get("attributes")
+        == expected_series[1]["attributes"]
+    )
 
 
 async def test_coordinator_disabled(

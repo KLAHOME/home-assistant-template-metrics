@@ -105,5 +105,3 @@ metrics:
 An example dashboard is provided in `examples/battery_monitoring_dashboard.json`.
 Import it in Grafana via *Dashboards → New → Import*, supply the JSON file, and
 select your Prometheus datasource when prompted.
-
-

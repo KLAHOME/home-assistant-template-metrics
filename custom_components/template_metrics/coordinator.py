@@ -94,8 +94,13 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         metric_attributes = dict(self._attributes)
         custom_attribute_templates = metric.get(TEMPLATE_ATTRIBUTES, {})
         if custom_attribute_templates:
-            for attribute_name, attribute_template in custom_attribute_templates.items():
-                rendered_attribute = Template(attribute_template, self.hass).async_render()
+            for (
+                attribute_name,
+                attribute_template,
+            ) in custom_attribute_templates.items():
+                rendered_attribute = Template(
+                    attribute_template, self.hass
+                ).async_render()
                 if rendered_attribute is None:
                     _LOGGER.error(
                         "Template for attribute %s of %s returned None",
@@ -105,7 +110,9 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                     raise UpdateFailed(
                         f"Template attribute {attribute_name} returned None for {metric['name']}"
                     )
-                metric_attributes[attribute_name] = self._normalize_attribute_value(rendered_attribute)
+                metric_attributes[attribute_name] = self._normalize_attribute_value(
+                    rendered_attribute
+                )
         return metric_attributes
 
     def _extract_series_entries(
@@ -153,7 +160,9 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                     key: self._normalize_attribute_value(val)
                     for key, val in attributes.items()
                 }
-                entries.append({"value": entry["value"], "attributes": normalized_attributes})
+                entries.append(
+                    {"value": entry["value"], "attributes": normalized_attributes}
+                )
             return entries
         return None
 
