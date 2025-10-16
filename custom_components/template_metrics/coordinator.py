@@ -15,7 +15,7 @@ from .const import DOMAIN, METER, UPDATE_INTERVAL
 _LOGGER = logging.getLogger(__name__)
 
 
-class HAMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
+class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
     """Class to push metrics data."""
 
     def __init__(

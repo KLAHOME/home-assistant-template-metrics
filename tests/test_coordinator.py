@@ -6,7 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.setup import async_setup_component
 
-from custom_components.hametrics.const import DOMAIN
+from custom_components.template_metrics.const import DOMAIN
 
 
 async def test_coordinator_update(hass: HomeAssistant, mock_config, mock_opentelemetry):

@@ -4,7 +4,7 @@ import os
 import sys
 import pytest
 
-from custom_components.hametrics.const import DOMAIN
+from custom_components.template_metrics.const import DOMAIN
 
 
 if "HA_CLONE" in os.environ:
@@ -25,8 +25,8 @@ def mock_config():
     """Fixture for a sample configuration."""
     return {
         DOMAIN: {
-            "instance_id": "test_instance",
-            "api_key": "test_api_key",
+            "user": "test",
+            "token": "testtoken",
             "remote_write_url": "https://prometheus.example.com/api/prom/push",
             "update_interval": 60,
             "metrics": [
@@ -46,7 +46,7 @@ def mock_opentelemetry(mocker):
     mock_meter = mocker.patch("opentelemetry.metrics.get_meter")
     mock_gauge = mocker.MagicMock()
     mocker.patch(
-        "opentelemetry.exporter.prometheus_remote_write.PrometheusRemoteWriteMetricsExporter"
+        "custom_components.template_metrics.PrometheusRemoteWriteMetricsExporter"
     )
     mock_meter.return_value.create_gauge.return_value = mock_gauge
     return mock_gauge

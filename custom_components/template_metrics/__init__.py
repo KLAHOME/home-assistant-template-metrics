@@ -1,4 +1,4 @@
-"""Home Assistant Metrics Integration."""
+"""Home Assistant Template Metrics Integration."""
 
 from __future__ import annotations
 
@@ -27,8 +27,8 @@ from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from .const import (
     COORDINATOR,
     DOMAIN,
-    INSTANCE_ID,
-    API_KEY,
+    USER,
+    TOKEN,
     REMOTE_WRITE_URL,
     UPDATE_INTERVAL,
     METRICS,
@@ -37,7 +37,7 @@ from .const import (
     METER,
     PROVIDER,
 )
-from .coordinator import HAMetricsCoordinator
+from .coordinator import TemplateMetricsCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,8 +52,8 @@ CONFIG_SCHEMA = vol.Schema(
     {
         DOMAIN: vol.Schema(
             {
-                vol.Required(INSTANCE_ID): cv.string,
-                vol.Required(API_KEY): cv.string,
+                vol.Required(USER): cv.string,
+                vol.Required(TOKEN): cv.string,
                 vol.Required(REMOTE_WRITE_URL): cv.url,
                 vol.Optional(UPDATE_INTERVAL, default=60): cv.positive_int,
                 vol.Required(METRICS): vol.All(
@@ -76,13 +76,13 @@ async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     if (
-        not config_data[INSTANCE_ID]
-        or not config_data[API_KEY]
+        not config_data[USER]
+        or not config_data[TOKEN]
         or not config_data[REMOTE_WRITE_URL]
         or not len(config_data[METRICS])
     ):
         _LOGGER.error(
-            "Instance ID, API Key, Remote Write URL and at least one metric must be provided"
+            "User, Token, Remote Write URL and at least one metric must be provided"
         )
         raise ConfigEntryNotReady
 
@@ -94,7 +94,7 @@ async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
                 PrometheusRemoteWriteMetricsExporter(
                     endpoint=config_data[REMOTE_WRITE_URL],
                     headers={
-                        "Authorization": f"Basic {base64.b64encode(f'{config_data[INSTANCE_ID]}:{config_data[API_KEY]}'.encode()).decode()}"
+                        "Authorization": f"Basic {base64.b64encode(f'{config_data[USER]}:{config_data[TOKEN]}'.encode()).decode()}"
                     },
                 ),
                 export_interval_millis=1000 * config_data.get(UPDATE_INTERVAL, 60),
@@ -115,7 +115,7 @@ async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _shutdown_otel)
 
-    coordinator = HAMetricsCoordinator(
+    coordinator = TemplateMetricsCoordinator(
         hass,
         config=config_data,
     )

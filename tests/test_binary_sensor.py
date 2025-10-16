@@ -3,7 +3,7 @@
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
-from custom_components.hametrics.const import DOMAIN
+from custom_components.template_metrics.const import DOMAIN
 
 
 async def test_binary_sensor(hass: HomeAssistant, mock_config, mock_opentelemetry):
@@ -13,7 +13,7 @@ async def test_binary_sensor(hass: HomeAssistant, mock_config, mock_opentelemetr
     assert await async_setup_component(hass, DOMAIN, mock_config)
     await hass.async_block_till_done()
 
-    state = hass.states.get("binary_sensor.hametrics_connection")
+    state = hass.states.get("binary_sensor.template_metrics_connection")
     assert state is not None
     assert state.state == "on"
 
@@ -27,12 +27,12 @@ async def test_binary_sensor_failure_after_successful_setup(
     assert await async_setup_component(hass, DOMAIN, mock_config)
     await hass.async_block_till_done()
 
-    state = hass.states.get("binary_sensor.hametrics_connection")
+    state = hass.states.get("binary_sensor.template_metrics_connection")
     assert state is not None
     assert state.state == "on"
 
     mocker.patch(
-        "custom_components.hametrics.coordinator.HAMetricsCoordinator._async_update_data",
+        "custom_components.template_metrics.coordinator.TemplateMetricsCoordinator._async_update_data",
         side_effect=Exception("Update failed"),
     )
 
@@ -40,7 +40,7 @@ async def test_binary_sensor_failure_after_successful_setup(
     await coordinator.async_request_refresh()
     await hass.async_block_till_done()
 
-    state = hass.states.get("binary_sensor.hametrics_connection")
+    state = hass.states.get("binary_sensor.template_metrics_connection")
     assert state.state == "off"
 
 
@@ -54,7 +54,7 @@ async def test_binary_sensor_off_when_last_update_failed_flag(
     await hass.async_block_till_done()
 
     # Initially on
-    state = hass.states.get("binary_sensor.hametrics_connection")
+    state = hass.states.get("binary_sensor.template_metrics_connection")
     assert state is not None and state.state == "on"
 
     # Simulate failure without mocking _async_update_data
@@ -63,7 +63,7 @@ async def test_binary_sensor_off_when_last_update_failed_flag(
     coordinator.async_update_listeners()
     await hass.async_block_till_done()
 
-    state = hass.states.get("binary_sensor.hametrics_connection")
+    state = hass.states.get("binary_sensor.template_metrics_connection")
     assert state.state == "off"
 
 
@@ -77,7 +77,7 @@ async def test_binary_sensor_off_when_disabled(
     await hass.async_block_till_done()
 
     # Initially on
-    state = hass.states.get("binary_sensor.hametrics_connection")
+    state = hass.states.get("binary_sensor.template_metrics_connection")
     assert state is not None and state.state == "on"
 
     # Disable coordinator
@@ -86,7 +86,7 @@ async def test_binary_sensor_off_when_disabled(
     coordinator.async_update_listeners()
     await hass.async_block_till_done()
 
-    state = hass.states.get("binary_sensor.hametrics_connection")
+    state = hass.states.get("binary_sensor.template_metrics_connection")
     assert state.state == "off"
 
 
@@ -106,7 +106,7 @@ async def test_binary_sensor_recovers_after_failure(
     coordinator.async_update_listeners()
     await hass.async_block_till_done()
 
-    state = hass.states.get("binary_sensor.hametrics_connection")
+    state = hass.states.get("binary_sensor.template_metrics_connection")
     assert state.state == "off"
 
     # Recover
@@ -115,5 +115,5 @@ async def test_binary_sensor_recovers_after_failure(
     coordinator.async_update_listeners()
     await hass.async_block_till_done()
 
-    state = hass.states.get("binary_sensor.hametrics_connection")
+    state = hass.states.get("binary_sensor.template_metrics_connection")
     assert state.state == "on"

@@ -1,8 +1,8 @@
 """Constants for the integration."""
 
-DOMAIN = "hametrics"
-INSTANCE_ID = "instance_id"
-API_KEY = "api_key"
+DOMAIN = "template_metrics"
+USER = "user"
+TOKEN = "token"
 REMOTE_WRITE_URL = "remote_write_url"
 UPDATE_INTERVAL = "update_interval"
 METRICS = "metrics"

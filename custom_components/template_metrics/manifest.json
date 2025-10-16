@@ -1,20 +1,20 @@
 {
-  "domain": "hametrics",
-  "name": "Home Assistant Metrics",
+  "domain": "template_metrics",
+  "name": "Home Assistant Template Metrics",
   "after_dependencies": [
     "cloud"
   ],
   "codeowners": [
-    "@klatka"
+    "@KLAHOME"
   ],
   "config_flow": false,
   "dependencies": [],
-  "documentation": "https://github.com/KLAHOME/home-assistant-metrics",
+  "documentation": "https://github.com/KLAHOME/home-assistant-template-metrics",
   "integration_type": "service",
   "iot_class": "cloud_push",
-  "issue_tracker": "https://github.com/KLAHOME/home-assistant-metrics/issues",
+  "issue_tracker": "https://github.com/KLAHOME/home-assistant-template-metrics/issues",
   "loggers": [
-    "custom_components.hametrics"
+    "custom_components.template_metrics"
   ],
   "requirements": [
     "opentelemetry-api==1.37.0",

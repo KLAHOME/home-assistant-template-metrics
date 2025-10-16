@@ -10,7 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import HAMetricsCoordinator
+from . import TemplateMetricsCoordinator
 from .const import COORDINATOR, DOMAIN
 
 
@@ -25,22 +25,22 @@ async def async_setup_platform(
     if discovery_info is None:
         return
 
-    coordinator: HAMetricsCoordinator = hass.data[DOMAIN][COORDINATOR]
+    coordinator: TemplateMetricsCoordinator = hass.data[DOMAIN][COORDINATOR]
 
     entities = [
-        HAMetricsBinarySensor(coordinator),
+        TemplateMetricsBinarySensor(coordinator),
     ]
     async_add_entities(entities)
 
 
-class HAMetricsBinarySensor(CoordinatorEntity, BinarySensorEntity):
+class TemplateMetricsBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Binary sensor for connection status."""
 
     _attr_has_entity_name = True
-    _attr_name = f"{DOMAIN}_connection"
+    _attr_name = "Template Metrics Connection"
     _attr_unique_id = f"{DOMAIN}_connection"
 
-    def __init__(self, coordinator: HAMetricsCoordinator):
+    def __init__(self, coordinator: TemplateMetricsCoordinator):
         """Initialize."""
         super().__init__(coordinator)
 
