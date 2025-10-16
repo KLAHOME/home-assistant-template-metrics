@@ -35,6 +35,7 @@ from .const import (
     METRICS,
     TEMPLATE_NAME,
     TEMPLATE,
+    TEMPLATE_ATTRIBUTES,
     INSTANCE_LABEL,
     METER,
     PROVIDER,
@@ -47,6 +48,7 @@ TEMPLATE_SCHEMA = vol.Schema(
     {
         vol.Required(TEMPLATE_NAME): cv.string,
         vol.Required(TEMPLATE): cv.string,
+        vol.Optional(TEMPLATE_ATTRIBUTES, default={}): {cv.string: cv.string},
     }
 )
 
