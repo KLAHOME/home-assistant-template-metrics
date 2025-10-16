@@ -31,6 +31,85 @@ async def test_coordinator_update(hass: HomeAssistant, mock_config, mock_opentel
     assert kwargs.get("attributes") == {"instance": "test-instance"}
 
 
+async def test_coordinator_metric_attributes(
+    hass: HomeAssistant, mock_config, mock_opentelemetry
+):
+    """Ensure metric-specific attributes are rendered and exported."""
+    mock_config[DOMAIN]["metrics"][0]["attributes"] = {
+        "battery_types": "{{ '[\"AA\",\"AAA\"]' }}",
+        "battery_note": "{{ states('sensor.temp') }}",
+    }
+
+    await async_setup_component(hass, "homeassistant", {})
+    hass.states.async_set("sensor.temp", "20.0")
+    assert await async_setup_component(hass, DOMAIN, mock_config)
+    await hass.async_block_till_done()
+
+    coordinator = hass.data[DOMAIN]["coordinator"]
+    data = await coordinator._async_update_data()
+
+    assert data["success"] is True
+    assert data["enabled"] is True
+    assert data["data"]["ha_temperature_adjusted"] == pytest.approx(24.0)
+    mock_opentelemetry.set.assert_called()
+    _, kwargs = mock_opentelemetry.set.call_args
+    assert kwargs.get("attributes") == {
+        "instance": "test-instance",
+        "battery_types": ["AA", "AAA"],
+        "battery_note": 20.0,
+    }
+
+
+async def test_coordinator_multi_series_metric(
+    hass: HomeAssistant, mock_config, mock_opentelemetry
+):
+    """Handle template responses that describe multiple series."""
+    mock_config[DOMAIN]["metrics"] = [
+        {
+            "name": "battery_quantities",
+            "template": "{{ [{\"value\": 3, \"attributes\": {\"type\": \"AA\", \"device\": \"remote\"}}, {\"value\": \"5\", \"attributes\": {\"type\": \"AAA\"}}] | tojson }}",
+            "attributes": {
+                "category": "{{ 'stock' }}",
+            },
+        }
+    ]
+
+    await async_setup_component(hass, "homeassistant", {})
+    assert await async_setup_component(hass, DOMAIN, mock_config)
+    await hass.async_block_till_done()
+
+    coordinator = hass.data[DOMAIN]["coordinator"]
+    mock_opentelemetry.set.reset_mock()
+    data = await coordinator._async_update_data()
+
+    expected_series = [
+        {
+            "value": 3.0,
+            "attributes": {
+                "instance": "test-instance",
+                "category": "stock",
+                "type": "AA",
+                "device": "remote",
+            },
+        },
+        {
+            "value": 5.0,
+            "attributes": {
+                "instance": "test-instance",
+                "category": "stock",
+                "type": "AAA",
+            },
+        },
+    ]
+
+    assert data["success"] is True
+    assert data["enabled"] is True
+    assert data["data"]["battery_quantities"] == expected_series
+    assert mock_opentelemetry.set.call_count == 2
+    assert mock_opentelemetry.set.call_args_list[0][1].get("attributes") == expected_series[0]["attributes"]
+    assert mock_opentelemetry.set.call_args_list[1][1].get("attributes") == expected_series[1]["attributes"]
+
+
 async def test_coordinator_disabled(
     hass: HomeAssistant, mock_config, mock_opentelemetry
 ):
