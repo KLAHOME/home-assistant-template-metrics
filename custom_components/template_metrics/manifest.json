@@ -1,0 +1,25 @@
+{
+  "domain": "template_metrics",
+  "name": "Home Assistant Template Metrics",
+  "after_dependencies": [
+    "cloud"
+  ],
+  "codeowners": [
+    "@KLAHOME"
+  ],
+  "config_flow": false,
+  "dependencies": [],
+  "documentation": "https://github.com/KLAHOME/home-assistant-template-metrics",
+  "integration_type": "service",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/KLAHOME/home-assistant-template-metrics/issues",
+  "loggers": [
+    "custom_components.template_metrics"
+  ],
+  "requirements": [
+    "opentelemetry-api==1.37.0",
+    "opentelemetry-sdk==1.37.0",
+    "python-snappy>=0.6"
+  ],
+  "version": "0.0.1"
+}
