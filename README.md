@@ -97,7 +97,7 @@ metrics:
           },
         }] %}
       {% endfor %}
-        {{ payload.series | tojson }}
+      {{ payload.series | tojson }}
 ```
 
 ### Grafana dashboard
