@@ -1,5 +1,7 @@
 # Home Assistant Template Metrics
 
+[![codecov](https://codecov.io/github/KLAHOME/home-assistant-template-metrics/graph/badge.svg?token=RX00KSW6HE)](https://codecov.io/github/KLAHOME/home-assistant-template-metrics)
+
 Home Assistant custom component that renders Jinja templates into Prometheus-compatible metrics, including multi-series and labelled outputs for Grafana dashboards via Prometheus remote write.
 
 ## Example config in Home Assistant
