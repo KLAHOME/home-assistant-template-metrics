@@ -1,4 +1,4 @@
-# home-assistant-template-metrics
+# Home Assistant Template Metrics
 
 Home Assistant custom component that renders Jinja templates into Prometheus-compatible metrics, including multi-series and labelled outputs for Grafana dashboards via Prometheus remote write.
 
@@ -55,21 +55,55 @@ exported.
 
 ```yaml
 metrics:
-  - name: homeassistant_binary_sensor_quantities_quantity
+  - name: battery_notes_quantity
     template: >-
+      {% set batteries = integration_entities("battery_notes") | expand
+          | selectattr('attributes.battery_type', 'defined')
+          | selectattr('attributes.battery_quantity', 'defined')
+          | selectattr('entity_id', 'search', '_battery_type')
+          | list %}
       {% set payload = namespace(series=[]) %}
-      {% for battery in integration_entities("battery_notes") | expand %}
-        {% if battery.attributes.battery_type is defined and battery.attributes.battery_quantity is defined %}
-          {% set payload.series = payload.series + [{
-            'value': battery.attributes.battery_quantity | int(0),
-            'attributes': {
-              'type': battery.attributes.battery_type,
-              'friendly_name': battery.name,
-              'entity_id': battery.entity_id,
-            },
-          }] %}
-        {% endif %}
+      {% for battery in batteries if not is_hidden_entity(battery.entity_id) %}
+        {% set payload.series = payload.series + [{
+          'value': battery.attributes.battery_quantity | int(0),
+          'attributes': {
+            'type': battery.attributes.battery_type,
+            'friendly_name': battery.name,
+            'entity_id': battery.entity_id,
+          },
+        }] %}
       {% endfor %}
       {{ payload.series | tojson }}
+  - name: battery_notes_active_quantity
+    template: >-
+      {% set items = integration_entities("battery_notes") | expand
+          | selectattr('attributes.battery_type', 'defined')
+          | selectattr('attributes.battery_quantity', 'defined')
+          | selectattr('attributes.battery_low', 'defined')
+          | selectattr('attributes.battery_low', 'eq', True)
+          | selectattr('entity_id', 'search', '_battery_type')
+          | list %}
+      {% set payload = namespace(series=[]) %}
+      {% for item in items if not is_hidden_entity(item.entity_id) %}
+        {% set payload.series = payload.series + [{
+          'value': item.attributes.battery_quantity | int(0),
+          'attributes': {
+            'type': item.attributes.battery_type,
+            'friendly_name': item.name,
+            'entity_id': item.entity_id,
+            'domain': item.domain,
+            'battery_low': true,
+            'list_index': loop.index0,
+          },
+        }] %}
+      {% endfor %}
+        {{ payload.series | tojson }}
 ```
+
+### Grafana dashboard
+
+An example dashboard is provided in `examples/battery_monitoring_dashboard.json`.
+Import it in Grafana via *Dashboards → New → Import*, supply the JSON file, and
+select your Prometheus datasource when prompted.
+
 

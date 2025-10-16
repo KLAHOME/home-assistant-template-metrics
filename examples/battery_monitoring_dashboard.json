@@ -85,7 +85,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(homeassistant_binary_sensor_quantities_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"})",
+          "expr": "sum(battery_notes_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"})",
           "legendFormat": "Total",
           "interval": ""
         }
@@ -147,7 +147,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(homeassistant_binary_sensor_quantities_active_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"})",
+          "expr": "sum(battery_notes_active_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"})",
           "legendFormat": "Low"
         }
       ],
@@ -208,7 +208,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (type) (homeassistant_binary_sensor_quantities_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"})",
+          "expr": "sum by (type) (battery_notes_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"})",
           "legendFormat": "{{type}}"
         }
       ],
@@ -255,7 +255,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count by (instance, type) (homeassistant_binary_sensor_quantities_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"} < 3)",
+          "expr": "count by (instance, type) (battery_notes_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"} < 3)",
           "legendFormat": "{{instance}} - {{type}}"
         }
       ],
@@ -315,7 +315,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "homeassistant_binary_sensor_quantities_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"}",
+          "expr": "battery_notes_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"}",
           "format": "table",
           "instant": true
         }
@@ -426,12 +426,12 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (instance, type) (homeassistant_binary_sensor_quantities_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"})",
+          "expr": "sum by (instance, type) (battery_notes_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"})",
           "legendFormat": "{{instance}} - {{type}} (total)"
         },
         {
           "refId": "B",
-          "expr": "sum by (instance, type) (homeassistant_binary_sensor_quantities_active_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"})",
+          "expr": "sum by (instance, type) (battery_notes_active_quantity{instance=~\"$instance\", type=~\"$battery_type\", friendly_name=~\"$friendly_name\"})",
           "legendFormat": "{{instance}} - {{type}} (low)"
         }
       ],
@@ -472,7 +472,7 @@
         },
         "includeAll": true,
         "multi": true,
-        "query": "label_values(homeassistant_binary_sensor_quantities_quantity, instance)",
+        "query": "label_values(battery_notes_quantity, instance)",
         "refresh": 1,
         "sort": 1
       },
@@ -486,7 +486,7 @@
         },
         "includeAll": true,
         "multi": true,
-        "query": "label_values(homeassistant_binary_sensor_quantities_quantity, type)",
+        "query": "label_values(battery_notes_quantity, type)",
         "refresh": 1,
         "sort": 1
       },
@@ -500,7 +500,7 @@
         },
         "includeAll": true,
         "multi": true,
-        "query": "label_values(homeassistant_binary_sensor_quantities_quantity, friendly_name)",
+        "query": "label_values(battery_notes_quantity, friendly_name)",
         "refresh": 1,
         "sort": 1
       }
