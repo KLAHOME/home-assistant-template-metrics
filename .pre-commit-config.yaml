@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.10
+    rev: v0.14.4
     hooks:
       - id: ruff
         args:
@@ -11,7 +11,7 @@ repos:
     hooks:
       - id: yamllint
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
       - id: trailing-whitespace
@@ -22,7 +22,7 @@ repos:
       - id: check-json
         exclude: (.vscode|.devcontainer)
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.44.0
+    rev: v0.45.0
     hooks:
       - id: markdownlint-fix
         name: markdownlint-fix
