@@ -126,7 +126,7 @@ async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
         hass,
         config=config_data,
     )
-    await coordinator.async_config_entry_first_refresh()
+    await coordinator.async_refresh()
 
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
