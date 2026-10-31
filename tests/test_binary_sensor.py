@@ -43,6 +43,9 @@ async def test_binary_sensor_failure_after_successful_setup(
     state = hass.states.get("binary_sensor.template_metrics_connection")
     assert state.state == "off"
 
+    # Cancel the pending refresh debouncer timer to avoid a lingering timer.
+    await coordinator.async_shutdown()
+
 
 async def test_binary_sensor_off_when_last_update_failed_flag(
     hass: HomeAssistant, mock_config, mock_opentelemetry
