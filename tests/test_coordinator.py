@@ -1,7 +1,6 @@
 """Tests for Home Assistant Metrics Coordinator."""
 
 import pytest
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.setup import async_setup_component

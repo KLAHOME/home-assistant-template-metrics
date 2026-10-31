@@ -2,47 +2,47 @@
 
 from __future__ import annotations
 
-import logging
-from typing import Any, Dict
 import base64
+import logging
+from typing import Any
 
 import voluptuous as vol
 from homeassistant.const import (
+    EVENT_HOMEASSISTANT_STOP,
     Platform,
 )
 from homeassistant.core import (
     HomeAssistant,
 )
-from homeassistant.const import EVENT_HOMEASSISTANT_STOP
-from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.discovery import async_load_platform
 from opentelemetry import metrics
-from .prometheus_remote_write import (
-    PrometheusRemoteWriteMetricsExporter,
-)
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 
 from .const import (
     COORDINATOR,
-    DOMAIN,
-    USER,
-    TOKEN,
-    REMOTE_WRITE_URL,
-    UPDATE_INTERVAL,
-    METRICS,
-    TEMPLATE_NAME,
-    TEMPLATE,
-    TEMPLATE_ATTRIBUTES,
     DEFAULT_JOB_LABEL,
+    DOMAIN,
     INSTANCE_LABEL,
     JOB_LABEL,
     METER,
+    METRICS,
     PROVIDER,
+    REMOTE_WRITE_URL,
+    TEMPLATE,
+    TEMPLATE_ATTRIBUTES,
+    TEMPLATE_NAME,
+    TOKEN,
+    UPDATE_INTERVAL,
+    USER,
 )
 from .coordinator import TemplateMetricsCoordinator
+from .prometheus_remote_write import (
+    PrometheusRemoteWriteMetricsExporter,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ CONFIG_SCHEMA = vol.Schema(
 )
 
 
-async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
+async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
     """Set up the integration."""
     if DOMAIN not in config:
         return True
@@ -120,7 +120,7 @@ async def async_setup(hass: HomeAssistant, config: Dict[str, Any]) -> bool:
         try:
             # The SDK exposes a shutdown on the provider to flush and stop readers
             provider.shutdown()
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001
             _LOGGER.debug("Error during OpenTelemetry shutdown: %s", err)
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _shutdown_otel)

@@ -3,30 +3,30 @@
 import json
 import logging
 from datetime import timedelta
-from typing import Any, Dict
+from typing import Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import TemplateError
 from homeassistant.helpers.template import Template
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.exceptions import TemplateError
 from opentelemetry.sdk.metrics import Meter
 
 from .const import (
-    DOMAIN,
-    METER,
-    UPDATE_INTERVAL,
     DEFAULT_JOB_LABEL,
+    DOMAIN,
     INSTANCE_LABEL,
     JOB_LABEL,
-    METRIC_LABEL_JOB,
+    METER,
     METRIC_LABEL_INSTANCE,
+    METRIC_LABEL_JOB,
     TEMPLATE_ATTRIBUTES,
+    UPDATE_INTERVAL,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
+class TemplateMetricsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Class to push metrics data."""
 
     def __init__(
@@ -96,7 +96,7 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             return value
         return value
 
-    def _render_metric_attributes(self, metric: Dict[str, Any]) -> Dict[str, Any]:
+    def _render_metric_attributes(self, metric: dict[str, Any]) -> dict[str, Any]:
         """Render configured default attributes for a metric."""
         metric_attributes = dict(self._attributes)
         custom_attribute_templates = metric.get(TEMPLATE_ATTRIBUTES, {})
@@ -195,14 +195,14 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                 f"Invalid numeric value for {metric_name}{context}: {raw_value}"
             ) from err
 
-    async def _async_update_data(self) -> Dict[str, Any]:
+    async def _async_update_data(self) -> dict[str, Any]:
         """Push metrics to endpoint."""
         if not self.enabled:
             _LOGGER.debug("Push disabled, skipping metrics push")
             return {"success": True, "data": {}, "enabled": False}
 
         try:
-            metrics_data: Dict[str, Any] = {}
+            metrics_data: dict[str, Any] = {}
             for metric in self._config["metrics"]:
                 try:
                     template = Template(metric["template"], self.hass)
@@ -223,7 +223,7 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                         float_value = self._coerce_to_float(
                             rendered_value, metric["name"]
                         )
-                        set_kwargs: Dict[str, Any] = {}
+                        set_kwargs: dict[str, Any] = {}
                         if base_attributes:
                             set_kwargs["attributes"] = base_attributes
                         gauge.set(float_value, **set_kwargs)
@@ -242,7 +242,7 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
                         )
                         entry_attributes = dict(base_attributes)
                         entry_attributes.update(series_entry["attributes"])
-                        set_kwargs: Dict[str, Any] = {}
+                        set_kwargs: dict[str, Any] = {}
                         if entry_attributes:
                             set_kwargs["attributes"] = entry_attributes
                         gauge.set(float_value, **set_kwargs)
@@ -261,7 +261,7 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
             self.last_update_success = True
             return {"success": True, "data": metrics_data, "enabled": True}
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001
             self.last_update_success = False
             _LOGGER.error(f"Error updating metrics: {err}")
             raise UpdateFailed(f"Failed to update metrics: {err}")

@@ -2,10 +2,10 @@
 
 import os
 import sys
+
 import pytest
 
 from custom_components.template_metrics.const import DOMAIN
-
 
 if "HA_CLONE" in os.environ:
     # Rewire the testing package to the cloned test modules
