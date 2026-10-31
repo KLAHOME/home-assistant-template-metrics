@@ -9,6 +9,7 @@ Home Assistant custom component that renders Jinja templates into Prometheus-com
 ```yaml
 template_metrics:
   instance_label: ha-main
+  job_label: homeassistant  # optional, default "homeassistant"
   user: 123456
   token: glc_ey
   remote_write_url: https://prometheus-prod-1-prod-eu-west-2.grafana.net/api/prom/push

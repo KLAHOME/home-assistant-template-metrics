@@ -36,7 +36,9 @@ from .const import (
     TEMPLATE_NAME,
     TEMPLATE,
     TEMPLATE_ATTRIBUTES,
+    DEFAULT_JOB_LABEL,
     INSTANCE_LABEL,
+    JOB_LABEL,
     METER,
     PROVIDER,
 )
@@ -61,6 +63,7 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Required(REMOTE_WRITE_URL): cv.url,
                 vol.Optional(UPDATE_INTERVAL, default=60): cv.positive_int,
                 vol.Optional(INSTANCE_LABEL): cv.string,
+                vol.Optional(JOB_LABEL, default=DEFAULT_JOB_LABEL): cv.string,
                 vol.Required(METRICS): vol.All(
                     cv.ensure_list,
                     [TEMPLATE_SCHEMA],

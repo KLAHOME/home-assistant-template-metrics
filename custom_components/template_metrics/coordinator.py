@@ -15,7 +15,10 @@ from .const import (
     DOMAIN,
     METER,
     UPDATE_INTERVAL,
+    DEFAULT_JOB_LABEL,
     INSTANCE_LABEL,
+    JOB_LABEL,
+    METRIC_LABEL_JOB,
     METRIC_LABEL_INSTANCE,
     TEMPLATE_ATTRIBUTES,
 )
@@ -37,6 +40,10 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
         self.enabled = True
         self.last_update_success = True
         self._attributes: dict[str, Any] = {}
+
+        job_label = config.get(JOB_LABEL, DEFAULT_JOB_LABEL)
+        if job_label:
+            self._attributes[METRIC_LABEL_JOB] = job_label
 
         instance_label = config.get(INSTANCE_LABEL)
         if instance_label:
