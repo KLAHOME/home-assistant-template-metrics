@@ -28,7 +28,10 @@ async def test_coordinator_update(hass: HomeAssistant, mock_config, mock_opentel
     )  # (20.0 * 1.1 + 2)
     mock_opentelemetry.set.assert_called()
     _, kwargs = mock_opentelemetry.set.call_args
-    assert kwargs.get("attributes") == {"job": "homeassistant", "instance": "test-instance"}
+    assert kwargs.get("attributes") == {
+        "job": "homeassistant",
+        "instance": "test-instance",
+    }
 
 
 async def test_coordinator_metric_attributes(
@@ -55,7 +58,7 @@ async def test_coordinator_metric_attributes(
     _, kwargs = mock_opentelemetry.set.call_args
     assert kwargs.get("attributes") == {
         "job": "homeassistant",
-                "instance": "test-instance",
+        "instance": "test-instance",
         "battery_types": ["AA", "AAA"],
         "battery_note": 20.0,
     }
