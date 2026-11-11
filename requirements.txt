@@ -1,5 +1,5 @@
 homeassistant
-opentelemetry-api==1.39.1
+opentelemetry-api==1.45.2
 opentelemetry-sdk==1.39.1
 python-snappy>=0.7.3
 protobuf>=6.32.0
