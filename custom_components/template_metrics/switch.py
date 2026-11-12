@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.const import STATE_OFF
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -30,8 +32,11 @@ async def async_setup_platform(
     async_add_entities(entities)
 
 
-class TemplateMetricsSwitch(CoordinatorEntity, SwitchEntity):
-    """Switch to enable/disable sending metrics."""
+class TemplateMetricsSwitch(CoordinatorEntity, SwitchEntity, RestoreEntity):
+    """Switch to enable/disable sending metrics.
+
+    A saved off state survives restarts; without a saved state it starts on.
+    """
 
     _attr_has_entity_name = True
     _attr_name = "Template Metrics Switch"
@@ -40,6 +45,13 @@ class TemplateMetricsSwitch(CoordinatorEntity, SwitchEntity):
     def __init__(self, coordinator: TemplateMetricsCoordinator):
         """Initialize."""
         super().__init__(coordinator)
+
+    async def async_added_to_hass(self) -> None:
+        """Restore a saved off state before anything is exported."""
+        await super().async_added_to_hass()
+        last_state = await self.async_get_last_state()
+        if last_state is not None and last_state.state == STATE_OFF:
+            self.coordinator.set_enabled(False, send_opt_out=False)
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn the switch on."""

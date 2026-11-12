@@ -103,6 +103,18 @@ metrics:
       {{ payload.series | tojson }}
 ```
 
+## Switching pushing off
+
+`switch.template_metrics_switch` turns pushing on and off.
+
+- Off stops every export, including the last values the OpenTelemetry SDK
+  would otherwise keep exporting.
+- Turning it off sends `template_metrics_opt_in` with value `0` exactly once,
+  so the receiver can tell "telemetry disabled" from "offline". While on, every
+  push contains `template_metrics_opt_in` with value `1`.
+- An off state is restored after a restart before anything is exported and
+  does not send `0` again. Without a saved state the switch starts on.
+
 ### Grafana dashboard
 
 An example dashboard is provided in `examples/battery_monitoring_dashboard.json`.

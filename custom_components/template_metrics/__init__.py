@@ -9,6 +9,7 @@ from typing import Any
 import voluptuous as vol
 from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP,
+    STATE_OFF,
     Platform,
 )
 from homeassistant.core import (
@@ -16,6 +17,8 @@ from homeassistant.core import (
 )
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import restore_state
 from homeassistant.helpers.discovery import async_load_platform
 from opentelemetry import metrics
 from opentelemetry.sdk.metrics import MeterProvider
@@ -26,6 +29,7 @@ from .const import (
     COORDINATOR,
     DEFAULT_JOB_LABEL,
     DOMAIN,
+    GATE,
     INSTANCE_LABEL,
     JOB_LABEL,
     METER,
@@ -40,6 +44,7 @@ from .const import (
     USER,
 )
 from .coordinator import TemplateMetricsCoordinator
+from .gate import GatedMetricsExporter
 from .prometheus_remote_write import (
     PrometheusRemoteWriteMetricsExporter,
 )
@@ -97,16 +102,26 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
 
     resource_attributes = {"service.name": "homeassistant"}
 
+    # Honour a saved off state before the reader exports anything
+    start_off = _switch_saved_off(hass)
+
+    # The gate drops exports while the switch is off, see gate.py
+    gate = GatedMetricsExporter(
+        PrometheusRemoteWriteMetricsExporter(
+            endpoint=config_data[REMOTE_WRITE_URL],
+            headers={
+                "Authorization": f"Basic {base64.b64encode(f'{config_data[USER]}:{config_data[TOKEN]}'.encode()).decode()}"
+            },
+        ),
+        enabled=not start_off,
+    )
+    hass.data[DOMAIN][GATE] = gate
+
     provider = MeterProvider(
         resource=Resource(attributes=resource_attributes),
         metric_readers=[
             PeriodicExportingMetricReader(
-                PrometheusRemoteWriteMetricsExporter(
-                    endpoint=config_data[REMOTE_WRITE_URL],
-                    headers={
-                        "Authorization": f"Basic {base64.b64encode(f'{config_data[USER]}:{config_data[TOKEN]}'.encode()).decode()}"
-                    },
-                ),
+                gate,
                 export_interval_millis=1000 * config_data.get(UPDATE_INTERVAL, 60),
             )
         ],
@@ -129,6 +144,7 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
         hass,
         config=config_data,
     )
+    coordinator.enabled = not start_off
     await coordinator.async_refresh()
 
     if not coordinator.last_update_success:
@@ -140,3 +156,17 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
     await async_load_platform(hass, Platform.SWITCH, DOMAIN, {}, config)
 
     return True
+
+
+def _switch_saved_off(hass: HomeAssistant) -> bool:
+    """Whether the switch was off before the last restart."""
+    entity_id = (
+        er.async_get(hass).async_get_entity_id("switch", DOMAIN, f"{DOMAIN}_switch")
+        or f"switch.{DOMAIN}_switch"
+    )
+    try:
+        stored = restore_state.async_get(hass).last_states.get(entity_id)
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.debug("Restore state unavailable: %s", err)
+        return False
+    return stored is not None and stored.state.state == STATE_OFF

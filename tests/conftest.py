@@ -4,8 +4,9 @@ import os
 import sys
 
 import pytest
+from opentelemetry.sdk.metrics.export import MetricExportResult
 
-from custom_components.template_metrics.const import DOMAIN
+from custom_components.template_metrics.const import DOMAIN, OPT_IN_METRIC
 
 if "HA_CLONE" in os.environ:
     # Rewire the testing package to the cloned test modules
@@ -46,10 +47,18 @@ def mock_opentelemetry(mocker):
     mocker.patch("opentelemetry.metrics.set_meter_provider")
     mock_meter = mocker.patch("opentelemetry.metrics.get_meter")
     mock_gauge = mocker.MagicMock()
-    mocker.patch(
+    exporter_cls = mocker.patch(
         "custom_components.template_metrics.PrometheusRemoteWriteMetricsExporter"
     )
+    exporter_cls.return_value.export.return_value = MetricExportResult.SUCCESS
     mocker.patch("custom_components.template_metrics.PeriodicExportingMetricReader")
 
-    mock_meter.return_value.create_gauge.return_value = mock_gauge
+    # The opt-in gauge is separate so metric tests only see their own values
+    opt_in_gauge = mocker.MagicMock()
+    mock_meter.return_value.create_gauge.side_effect = lambda name, **_: (
+        opt_in_gauge if name == OPT_IN_METRIC else mock_gauge
+    )
+    mock_gauge.opt_in_gauge = opt_in_gauge
+    # The exporter behind the gate, to check what actually leaves the instance
+    mock_gauge.exporter = exporter_cls.return_value
     return mock_gauge

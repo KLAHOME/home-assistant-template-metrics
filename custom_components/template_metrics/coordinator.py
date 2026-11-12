@@ -14,11 +14,13 @@ from opentelemetry.sdk.metrics import Meter
 from .const import (
     DEFAULT_JOB_LABEL,
     DOMAIN,
+    GATE,
     INSTANCE_LABEL,
     JOB_LABEL,
     METER,
     METRIC_LABEL_INSTANCE,
     METRIC_LABEL_JOB,
+    OPT_IN_METRIC,
     TEMPLATE_ATTRIBUTES,
     UPDATE_INTERVAL,
 )
@@ -38,6 +40,7 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._config = config
         self.meter: Meter = hass.data[DOMAIN][METER]
         self.enabled = True
+        self._opt_in_gauge = None
         self.last_update_success = True
         self._attributes: dict[str, Any] = {}
 
@@ -58,9 +61,27 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             always_update=False,
         )
 
-    def set_enabled(self, enabled: bool) -> None:
-        """Set the enabled state."""
+    def set_enabled(self, enabled: bool, send_opt_out: bool = True) -> None:
+        """Set the enabled state.
+
+        Disabling stops every export. With send_opt_out (switch turned off by
+        the user) the receiver gets ``opt_in=0`` exactly once; restoring a
+        saved off state after a restart sends nothing.
+        """
+        was_enabled = self.enabled
         self.enabled = enabled
+        gate = self.hass.data[DOMAIN].get(GATE)
+        if enabled:
+            if gate is not None:
+                gate.enable()
+            if not was_enabled:
+                self._set_opt_in(1)
+        else:
+            opt_out = send_opt_out and was_enabled
+            if opt_out:
+                self._set_opt_in(0)
+            if gate is not None:
+                gate.disable(send_opt_out=opt_out)
         _LOGGER.debug(f"Metrics set to {'' if enabled else 'not'} enabled")
         # Notify listeners immediately so entities re-evaluate their state
         self.async_set_updated_data(
@@ -70,6 +91,18 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "enabled": self.enabled,
             }
         )
+
+    def _set_opt_in(self, value: int) -> None:
+        """Export whether telemetry is enabled (1) or was just disabled (0)."""
+        if self._opt_in_gauge is None:
+            self._opt_in_gauge = self.meter.create_gauge(
+                OPT_IN_METRIC, description="HA template metrics opt-in"
+            )
+        gauge = self._opt_in_gauge
+        if self._attributes:
+            gauge.set(value, attributes=dict(self._attributes))
+        else:
+            gauge.set(value)
 
     async def _async_setup(self):
         """Set up the coordinator
@@ -202,6 +235,7 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return {"success": True, "data": {}, "enabled": False}
 
         try:
+            self._set_opt_in(1)
             metrics_data: dict[str, Any] = {}
             for metric in self._config["metrics"]:
                 try:
