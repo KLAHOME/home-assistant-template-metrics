@@ -32,8 +32,8 @@ class GatedMetricsExporter(MetricExporter):
 
     def __init__(self, exporter: MetricExporter, enabled: bool = True) -> None:
         super().__init__(
-            preferred_temporality=exporter._preferred_temporality,
-            preferred_aggregation=exporter._preferred_aggregation,
+            preferred_temporality=getattr(exporter, "_preferred_temporality", None),
+            preferred_aggregation=getattr(exporter, "_preferred_aggregation", None),
         )
         self._exporter = exporter
         self._lock = threading.Lock()
@@ -61,18 +61,37 @@ class GatedMetricsExporter(MetricExporter):
         timeout_millis: float = 10_000,
         **kwargs,
     ) -> MetricExportResult:
+        opt_out = False
         with self._lock:
             if self._enabled:
                 data = metrics_data
             elif self._opt_out:
                 self._opt_out = False
+                opt_out = True
                 data = _only_opt_in(metrics_data)
             else:
                 data = None
         if data is None:
             _LOGGER.debug("Push disabled, export dropped")
             return MetricExportResult.SUCCESS
-        return self._exporter.export(data, timeout_millis=timeout_millis, **kwargs)
+        try:
+            result = self._exporter.export(
+                data, timeout_millis=timeout_millis, **kwargs
+            )
+        except Exception:
+            result = MetricExportResult.FAILURE
+            if opt_out:
+                self._rearm_opt_out()
+            raise
+        if opt_out and result is not MetricExportResult.SUCCESS:
+            self._rearm_opt_out()
+        return result
+
+    def _rearm_opt_out(self) -> None:
+        """Retry the opt-out on the next export unless re-enabled meanwhile."""
+        with self._lock:
+            if not self._enabled:
+                self._opt_out = True
 
     def force_flush(self, timeout_millis: float = 10_000) -> bool:
         return self._exporter.force_flush(timeout_millis=timeout_millis)

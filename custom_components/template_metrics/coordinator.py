@@ -40,6 +40,7 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._config = config
         self.meter: Meter = hass.data[DOMAIN][METER]
         self.enabled = True
+        self._opt_in_gauge = None
         self.last_update_success = True
         self._attributes: dict[str, Any] = {}
 
@@ -73,6 +74,8 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if enabled:
             if gate is not None:
                 gate.enable()
+            if not was_enabled:
+                self._set_opt_in(1)
         else:
             opt_out = send_opt_out and was_enabled
             if opt_out:
@@ -91,9 +94,11 @@ class TemplateMetricsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _set_opt_in(self, value: int) -> None:
         """Export whether telemetry is enabled (1) or was just disabled (0)."""
-        gauge = self.meter.create_gauge(
-            OPT_IN_METRIC, description="HA template metrics opt-in"
-        )
+        if self._opt_in_gauge is None:
+            self._opt_in_gauge = self.meter.create_gauge(
+                OPT_IN_METRIC, description="HA template metrics opt-in"
+            )
+        gauge = self._opt_in_gauge
         if self._attributes:
             gauge.set(value, attributes=dict(self._attributes))
         else:

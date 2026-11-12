@@ -78,3 +78,38 @@ def test_enable_after_opt_out_forwards_again():
     gate.export(_metrics_data(1))
     assert _names(inner.export.call_args.args[0]) == {OPT_IN_METRIC, "ha_temperature"}
     assert gate.enabled
+
+
+def test_failed_opt_out_is_retried():
+    inner = _inner()
+    inner.export.return_value = MetricExportResult.FAILURE
+    gate = GatedMetricsExporter(inner)
+    gate.disable(send_opt_out=True)
+
+    gate.export(_metrics_data(0))
+    inner.export.return_value = MetricExportResult.SUCCESS
+    gate.export(_metrics_data(0))
+    gate.export(_metrics_data(0))
+    assert inner.export.call_count == 2
+    assert _names(inner.export.call_args.args[0]) == {OPT_IN_METRIC}
+
+
+def test_raising_opt_out_is_retried():
+    inner = _inner()
+    inner.export.side_effect = [RuntimeError("down"), MetricExportResult.SUCCESS]
+    gate = GatedMetricsExporter(inner)
+    gate.disable(send_opt_out=True)
+
+    try:
+        gate.export(_metrics_data(0))
+    except RuntimeError:
+        pass
+    gate.export(_metrics_data(0))
+    gate.export(_metrics_data(0))
+    assert inner.export.call_count == 2
+
+
+def test_exporter_without_private_preferences():
+    inner = MagicMock(spec=["export", "force_flush", "shutdown"])
+    gate = GatedMetricsExporter(inner)
+    assert gate.enabled
