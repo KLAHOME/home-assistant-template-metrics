@@ -26,6 +26,7 @@ from .const import (
     COORDINATOR,
     DEFAULT_JOB_LABEL,
     DOMAIN,
+    GATE,
     INSTANCE_LABEL,
     JOB_LABEL,
     METER,
@@ -40,6 +41,7 @@ from .const import (
     USER,
 )
 from .coordinator import TemplateMetricsCoordinator
+from .gate import GatedMetricsExporter
 from .prometheus_remote_write import (
     PrometheusRemoteWriteMetricsExporter,
 )
@@ -97,16 +99,22 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
 
     resource_attributes = {"service.name": "homeassistant"}
 
+    # The gate drops exports while the switch is off, see gate.py
+    gate = GatedMetricsExporter(
+        PrometheusRemoteWriteMetricsExporter(
+            endpoint=config_data[REMOTE_WRITE_URL],
+            headers={
+                "Authorization": f"Basic {base64.b64encode(f'{config_data[USER]}:{config_data[TOKEN]}'.encode()).decode()}"
+            },
+        )
+    )
+    hass.data[DOMAIN][GATE] = gate
+
     provider = MeterProvider(
         resource=Resource(attributes=resource_attributes),
         metric_readers=[
             PeriodicExportingMetricReader(
-                PrometheusRemoteWriteMetricsExporter(
-                    endpoint=config_data[REMOTE_WRITE_URL],
-                    headers={
-                        "Authorization": f"Basic {base64.b64encode(f'{config_data[USER]}:{config_data[TOKEN]}'.encode()).decode()}"
-                    },
-                ),
+                gate,
                 export_interval_millis=1000 * config_data.get(UPDATE_INTERVAL, 60),
             )
         ],
